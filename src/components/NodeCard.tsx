@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Node, File } from "@/types/supabase";
 import { HelpCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "@/hooks/use-toast";
 
 interface NodeCardProps {
   node: Node;
@@ -19,6 +20,45 @@ export function NodeCard({ node, files, onToggleStatus }: NodeCardProps) {
   });
   
   const usedPercentage = Math.min(100, (node.storage_used / node.storage_total) * 100);
+  
+  const handleToggleStatus = () => {
+    if (isOnline) {
+      // Check if taking this node offline would make any files completely unavailable
+      const potentiallyUnavailableFiles = filesOnNode.filter(file => {
+        // Check if all replicas of this file are on this node or other offline nodes
+        const hasOtherOnlineReplica = file.replicas?.some(replica => {
+          return replica.node_id !== node.id && 
+                 files.find(f => f.id === file.id)?.replicas?.some(r => 
+                   r.node_id === replica.node_id && 
+                   files.find(f => f.replicas?.some(fr => fr.node_id === r.node_id))?.replicas?.some(fr => 
+                     fr.node_id === r.node_id && 
+                     files.find(f => f.id === file.id)?.replicas?.some(r2 => 
+                       r2.node_id === fr.node_id
+                     )
+                   )
+                 );
+        });
+        
+        return !hasOtherOnlineReplica;
+      });
+      
+      if (potentiallyUnavailableFiles.length > 0) {
+        toast({
+          title: "Warning: Data Availability Impact",
+          description: `Taking this node offline will make ${potentiallyUnavailableFiles.length} file(s) temporarily unavailable`,
+          variant: "destructive"
+        });
+      }
+    } else {
+      // If bringing node back online, show a success message
+      toast({
+        title: "Node Back Online",
+        description: "Node is now online and files stored on it are accessible again."
+      });
+    }
+    
+    onToggleStatus(node.id, isOnline ? 'offline' : 'online');
+  };
   
   return (
     <Card className={isOnline ? '' : 'opacity-60'}>
@@ -59,7 +99,7 @@ export function NodeCard({ node, files, onToggleStatus }: NodeCardProps) {
                 <Button 
                   variant={isOnline ? "destructive" : "outline"} 
                   className="w-full"
-                  onClick={() => onToggleStatus(node.id, isOnline ? 'offline' : 'online')}
+                  onClick={handleToggleStatus}
                 >
                   {isOnline ? "Simulate Failure" : "Bring Node Online"}
                 </Button>

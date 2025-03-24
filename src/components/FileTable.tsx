@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { FileX, Download, Eye } from "lucide-react";
 import { type File, type Node } from "@/types/supabase";
+import { toast } from "@/hooks/use-toast";
 
 interface FileTableProps {
   files: File[];
@@ -23,6 +24,50 @@ export function FileTable({
     acc[node.id] = node;
     return acc;
   }, {} as Record<string, Node>);
+  
+  const handleViewFile = (fileId: string, fileName: string) => {
+    // Check if at least one replica is on an online node
+    const file = files.find(f => f.id === fileId);
+    const hasAccessibleReplica = file?.replicas?.some(replica => {
+      const node = nodeMap[replica.node_id];
+      return node?.status === 'online';
+    });
+    
+    if (!hasAccessibleReplica) {
+      toast({
+        title: "File unavailable",
+        description: "This file cannot be accessed because all nodes containing it are offline.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (onViewFile) {
+      onViewFile(fileId, fileName);
+    }
+  };
+  
+  const handleDownloadFile = (fileId: string, fileName: string) => {
+    // Check if at least one replica is on an online node
+    const file = files.find(f => f.id === fileId);
+    const hasAccessibleReplica = file?.replicas?.some(replica => {
+      const node = nodeMap[replica.node_id];
+      return node?.status === 'online';
+    });
+    
+    if (!hasAccessibleReplica) {
+      toast({
+        title: "File unavailable",
+        description: "This file cannot be downloaded because all nodes containing it are offline.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (onDownloadFile) {
+      onDownloadFile(fileId, fileName);
+    }
+  };
   
   return (
     <div className="overflow-auto">
@@ -70,12 +115,12 @@ export function FileTable({
                 <td className="py-3">
                   <div className="flex gap-2">
                     {onViewFile && (
-                      <Button variant="ghost" size="sm" onClick={() => onViewFile(file.id, file.name)}>
+                      <Button variant="ghost" size="sm" onClick={() => handleViewFile(file.id, file.name)}>
                         <Eye className="h-4 w-4" />
                       </Button>
                     )}
                     {onDownloadFile && (
-                      <Button variant="ghost" size="sm" onClick={() => onDownloadFile(file.id, file.name)}>
+                      <Button variant="ghost" size="sm" onClick={() => handleDownloadFile(file.id, file.name)}>
                         <Download className="h-4 w-4" />
                       </Button>
                     )}

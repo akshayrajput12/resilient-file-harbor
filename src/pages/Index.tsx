@@ -53,33 +53,89 @@ const Index = () => {
   const handleViewFile = (fileId: string, fileName: string) => {
     // In a real application, this would open or download the file
     toast({
-      title: "View File",
-      description: `Viewing file: ${fileName}`,
+      title: "Viewing File",
+      description: `Opening file: ${fileName}`,
     });
+    
+    // Simulate file viewing by showing content after a delay
+    setTimeout(() => {
+      toast({
+        title: "File Content",
+        description: `This is the simulated content of file: ${fileName}`,
+      });
+    }, 1000);
   };
 
   const handleDownloadFile = (fileId: string, fileName: string) => {
     // In a real application, this would download the file
     toast({
-      title: "Download File",
-      description: `Downloading file: ${fileName}`,
+      title: "Downloading File",
+      description: `Starting download for: ${fileName}`,
     });
+    
+    // Simulate download completion after a delay
+    setTimeout(() => {
+      toast({
+        title: "Download Complete",
+        description: `File ${fileName} has been downloaded successfully`,
+      });
+    }, 2000);
   };
 
   const handleRebalanceData = () => {
-    // In a real application, this would redistribute data across nodes
-    // For now, let's simulate this with a toast notification
+    // Get available online nodes
+    const onlineNodes = nodes.filter(node => node.status === 'online');
+    
+    if (onlineNodes.length < 2) {
+      toast({
+        title: "Rebalance Failed",
+        description: "Need at least two online nodes to rebalance data",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Get all files with their replicas
+    const filesWithReplicas = files.filter(file => file.replicas && file.replicas.length > 0);
+    
+    if (filesWithReplicas.length === 0) {
+      toast({
+        title: "Nothing to Rebalance",
+        description: "No files with replicas found in the system",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Start rebalancing simulation
     toast({
       title: "Rebalancing Data",
       description: "Redistributing data across available nodes...",
     });
     
+    // Simulate rebalancing progress
+    setTimeout(() => {
+      toast({
+        title: "Rebalancing in Progress",
+        description: "50% complete - moving files to optimize distribution",
+      });
+    }, 1000);
+    
+    // Simulate rebalance completion
     setTimeout(() => {
       toast({
         title: "Rebalance Complete",
         description: "Data has been optimally distributed across nodes",
       });
-    }, 2000);
+      
+      // Show detailed results
+      setTimeout(() => {
+        toast({
+          title: "Rebalance Results",
+          description: `Balanced ${filesWithReplicas.length} files across ${onlineNodes.length} nodes`,
+        });
+      }, 500);
+    }, 3000);
   };
 
   if (isLoadingNodes || isLoadingFiles) {
