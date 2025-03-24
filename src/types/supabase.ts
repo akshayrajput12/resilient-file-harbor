@@ -6,9 +6,15 @@ export type { Database };
 
 // Define types for our application using the Database type
 export type Profile = Database['public']['Tables']['profiles']['Row'];
-export type Node = Database['public']['Tables']['nodes']['Row'];
-export type File = Database['public']['Tables']['files']['Row'];
-export type Replica = Database['public']['Tables']['replicas']['Row'];
+export type Node = Database['public']['Tables']['nodes']['Row'] & {
+  replicas?: Replica[];
+};
+export type File = Database['public']['Tables']['files']['Row'] & {
+  replicas?: (Replica & { nodes?: Node })[];
+};
+export type Replica = Database['public']['Tables']['replicas']['Row'] & {
+  nodes?: Node;
+};
 
 // Insert types
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
