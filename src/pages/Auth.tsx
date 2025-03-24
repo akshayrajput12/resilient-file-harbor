@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -35,11 +34,6 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 const Auth = () => {
   const { user, signIn, signUp, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  
-  // If user is already logged in, redirect to home
-  if (user && !loading) {
-    return <Navigate to="/" replace />;
-  }
   
   // Login form
   const loginForm = useForm<LoginFormValues>({
@@ -83,6 +77,11 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
+  
+  // Only return navigate AFTER all hooks have been called
+  if (user && !loading) {
+    return <Navigate to="/" replace />;
+  }
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
