@@ -10,6 +10,8 @@ import { z } from "zod";
 import { Server } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { NodeInsert } from "@/types/supabase";
+import { ButtonProps } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const nodeSchema = z.object({
   name: z.string().min(1, "Node name is required"),
@@ -18,11 +20,20 @@ const nodeSchema = z.object({
 
 type NodeFormValues = z.infer<typeof nodeSchema>;
 
-interface CreateNodeDialogProps {
+interface CreateNodeDialogProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   onCreateNode: (node: NodeInsert) => void;
+  variant?: ButtonProps["variant"];
+  className?: string;
+  children?: React.ReactNode;
 }
 
-export function CreateNodeDialog({ onCreateNode }: CreateNodeDialogProps) {
+export function CreateNodeDialog({ 
+  onCreateNode, 
+  variant = "default", 
+  className, 
+  children,
+  ...props 
+}: CreateNodeDialogProps) {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
   
@@ -52,9 +63,13 @@ export function CreateNodeDialog({ onCreateNode }: CreateNodeDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full justify-start" variant="outline">
-          <Server className="mr-2 h-4 w-4" />
-          Add New Node
+        <Button className={cn("w-full justify-start", className)} variant={variant} {...props}>
+          {children || (
+            <>
+              <Server className="mr-2 h-4 w-4" />
+              Add New Node
+            </>
+          )}
         </Button>
       </DialogTrigger>
       <DialogContent>
