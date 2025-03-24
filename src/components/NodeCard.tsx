@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Node, File } from "@/types/supabase";
+import { HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface NodeCardProps {
   node: Node;
@@ -50,13 +52,26 @@ export function NodeCard({ node, files, onToggleStatus }: NodeCardProps) {
           </div>
         </div>
         
-        <Button 
-          variant={isOnline ? "destructive" : "outline"} 
-          className="w-full"
-          onClick={() => onToggleStatus(node.id, isOnline ? 'offline' : 'online')}
-        >
-          {isOnline ? "Simulate Failure" : "Bring Node Online"}
-        </Button>
+        <div className="relative">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant={isOnline ? "destructive" : "outline"} 
+                  className="w-full"
+                  onClick={() => onToggleStatus(node.id, isOnline ? 'offline' : 'online')}
+                >
+                  {isOnline ? "Simulate Failure" : "Bring Node Online"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {isOnline 
+                  ? "Simulates a node failure, making files stored only on this node temporarily unavailable" 
+                  : "Brings the node back online, restoring access to its files"}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </CardContent>
     </Card>
   );

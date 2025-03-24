@@ -1,146 +1,161 @@
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { Upload } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FilePlus } from "lucide-react";
+import { Node, FileInsert, ReplicaInsert } from "@/types/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-import { Checkbox } from "@/components/ui/checkbox";
-import { FileInsert, Node, ReplicaInsert } from "@/types/supabase";
+import { v4 as uuidv4 } from 'uuid';
 
 interface UploadFileDialogProps {
   nodes: Node[];
   onCreateFile: (file: FileInsert) => Promise<any>;
   onCreateReplica: (replica: ReplicaInsert) => Promise<any>;
+  children?: React.ReactNode;
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | null | undefined;
+  className?: string;
 }
 
-export function UploadFileDialog({ nodes, onCreateFile, onCreateReplica }: UploadFileDialogProps) {
-  const [open, setOpen] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
+export function UploadFileDialog({ 
+  nodes, 
+  onCreateFile, 
+  onCreateReplica,
+  children,
+  variant = "default",
+  className
+}: UploadFileDialogProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [fileName, setFileName] = useState("");
+  const [fileSize, setFileSize] = useState<number>(1);
+  const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
-  const activeNodes = nodes.filter(node => node.status === 'online');
+  const onlineNodes = nodes.filter(node => node.status === 'online');
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-    }
-  };
-  
-  const toggleNode = (nodeId: string) => {
-    setSelectedNodes(prev => {
-      if (prev.includes(nodeId)) {
-        return prev.filter(id => id !== nodeId);
-      } else {
-        return [...prev, nodeId];
-      }
-    });
-  };
-  
-  const handleUpload = async () => {
-    if (!selectedFile || !user || selectedNodes.length === 0) {
-      toast({
-        title: "Upload failed",
-        description: "Please select a file and at least one node",
-        variant: "destructive"
-      });
-      return;
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) return;
+    if (!fileName || !fileSize || selectedNodes.length === 0) return;
+    
+    setIsLoading(true);
     
     try {
-      // Create file entry in database
-      const fileSize = Math.round(selectedFile.size / (1024 * 1024)); // Convert to MB
+      // Create the file
       const fileData: FileInsert = {
-        name: selectedFile.name,
+        name: fileName,
         size: fileSize,
-        user_id: user.id,
+        user_id: user.id
       };
       
-      const createdFile = await onCreateFile(fileData);
+      const newFile = await onCreateFile(fileData);
       
-      // Create replicas in selected nodes
-      for (const nodeId of selectedNodes) {
+      // Create the replicas
+      const replicaPromises = selectedNodes.map(nodeId => {
         const replicaData: ReplicaInsert = {
-          file_id: createdFile.id,
-          node_id: nodeId,
+          file_id: newFile.id,
+          node_id: nodeId
         };
-        await onCreateReplica(replicaData);
-        
-        // Update node storage
-        const node = nodes.find(n => n.id === nodeId);
-        if (node) {
-          // Node storage update is handled by a trigger in the database
-        }
-      }
+        return onCreateReplica(replicaData);
+      });
       
-      setSelectedFile(null);
+      await Promise.all(replicaPromises);
+      
+      // Reset form and close dialog
+      setFileName("");
+      setFileSize(1);
       setSelectedNodes([]);
       setOpen(false);
     } catch (error) {
-      toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive"
-      });
+      console.error("Error uploading file:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
   
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="flex gap-2">
-          <Upload className="h-4 w-4" />
-          Upload
+        <Button variant={variant} className={className}>
+          {children || (
+            <>
+              <FilePlus className="h-4 w-4 mr-2" />
+              Upload File
+            </>
+          )}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Upload File</DialogTitle>
         </DialogHeader>
-        
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="file">Select File</Label>
-            <Input id="file" type="file" onChange={handleFileChange} className="mt-1" />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="fileName">File Name</Label>
+            <Input
+              id="fileName"
+              value={fileName}
+              onChange={(e) => setFileName(e.target.value)}
+              placeholder="Enter file name"
+              required
+            />
           </div>
           
-          {selectedFile && (
-            <div>
-              <Label>Replicate to Nodes</Label>
-              <div className="mt-2 space-y-2">
-                {activeNodes.length === 0 ? (
-                  <p className="text-sm text-amber-600">No active nodes available. Please create a node first.</p>
-                ) : (
-                  activeNodes.map(node => (
-                    <div key={node.id} className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={`node-${node.id}`} 
-                        checked={selectedNodes.includes(node.id)}
-                        onCheckedChange={() => toggleNode(node.id)}
-                      />
-                      <Label htmlFor={`node-${node.id}`} className="flex justify-between w-full">
-                        <span>{node.name}</span>
-                        <span className="text-sm text-gray-500">{node.storage_used}/{node.storage_total} GB used</span>
-                      </Label>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="fileSize">File Size (MB)</Label>
+            <Input
+              id="fileSize"
+              type="number"
+              min={1}
+              value={fileSize}
+              onChange={(e) => setFileSize(Number(e.target.value))}
+              required
+            />
+          </div>
           
-          <Button 
-            onClick={handleUpload} 
-            disabled={!selectedFile || selectedNodes.length === 0}
-            className="w-full"
-          >
-            Upload File
+          <div className="space-y-2">
+            <Label>Select Nodes for Storage</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {onlineNodes.length === 0 ? (
+                <p className="text-sm text-gray-500 col-span-2">No online nodes available</p>
+              ) : (
+                onlineNodes.map((node) => (
+                  <div key={node.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`node-${node.id}`}
+                      checked={selectedNodes.includes(node.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedNodes([...selectedNodes, node.id]);
+                        } else {
+                          setSelectedNodes(selectedNodes.filter(id => id !== node.id));
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    <label htmlFor={`node-${node.id}`} className="text-sm">
+                      {node.name} ({node.storage_used}/{node.storage_total} GB used)
+                    </label>
+                  </div>
+                ))
+              )}
+            </div>
+            {selectedNodes.length > 0 && (
+              <p className="text-xs text-gray-500">
+                Replication Factor: {selectedNodes.length}x
+              </p>
+            )}
+          </div>
+          
+          <Button type="submit" disabled={isLoading || onlineNodes.length === 0 || selectedNodes.length === 0}>
+            {isLoading ? "Uploading..." : "Upload File"}
           </Button>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

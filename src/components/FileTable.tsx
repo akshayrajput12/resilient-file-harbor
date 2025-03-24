@@ -1,15 +1,23 @@
 
 import { Button } from "@/components/ui/button";
-import { FileX } from "lucide-react";
+import { FileX, Download, Eye } from "lucide-react";
 import { type File, type Node } from "@/types/supabase";
 
 interface FileTableProps {
   files: File[];
   nodes: Node[];
   onDeleteFile: (fileId: string) => void;
+  onViewFile?: (fileId: string, fileName: string) => void;
+  onDownloadFile?: (fileId: string, fileName: string) => void;
 }
 
-export function FileTable({ files, nodes, onDeleteFile }: FileTableProps) {
+export function FileTable({ 
+  files, 
+  nodes, 
+  onDeleteFile, 
+  onViewFile, 
+  onDownloadFile 
+}: FileTableProps) {
   // Map node IDs to node objects for easier lookup
   const nodeMap = nodes.reduce((acc, node) => {
     acc[node.id] = node;
@@ -60,9 +68,21 @@ export function FileTable({ files, nodes, onDeleteFile }: FileTableProps) {
                   </div>
                 </td>
                 <td className="py-3">
-                  <Button variant="ghost" size="sm" onClick={() => onDeleteFile(file.id)}>
-                    <FileX className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    {onViewFile && (
+                      <Button variant="ghost" size="sm" onClick={() => onViewFile(file.id, file.name)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {onDownloadFile && (
+                      <Button variant="ghost" size="sm" onClick={() => onDownloadFile(file.id, file.name)}>
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => onDeleteFile(file.id)}>
+                      <FileX className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))
