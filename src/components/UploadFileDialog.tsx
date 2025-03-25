@@ -1,13 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FilePlus } from "lucide-react";
+import { FilePlus, Upload, FileSymlink } from "lucide-react";
 import { Node, FileInsert, ReplicaInsert } from "@/types/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from '@/hooks/use-toast';
+import { useFileUpload } from '@/hooks/useFileUpload';
 
 interface UploadFileDialogProps {
   nodes: Node[];
@@ -28,12 +29,22 @@ export function UploadFileDialog({
 }: UploadFileDialogProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [fileName, setFileName] = useState("");
-  const [fileSize, setFileSize] = useState<number>(1);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const { uploadFile, isUploading } = useFileUpload();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const onlineNodes = nodes.filter(node => node.status === 'online');
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+  
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,19 +58,10 @@ export function UploadFileDialog({
       return;
     }
     
-    if (!fileName) {
+    if (!selectedFile) {
       toast({
-        title: "File name required",
-        description: "Please enter a file name",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (!fileSize || fileSize <= 0) {
-      toast({
-        title: "Invalid file size",
-        description: "Please enter a valid file size",
+        title: "File required",
+        description: "Please select a file to upload",
         variant: "destructive"
       });
       return;
@@ -74,70 +76,12 @@ export function UploadFileDialog({
       return;
     }
     
-    setIsLoading(true);
+    const result = await uploadFile(selectedFile, selectedNodes);
     
-    try {
-      // Check if selected nodes have enough storage
-      const nodesWithStorage = onlineNodes.filter(node => selectedNodes.includes(node.id));
-      const insufficientNodes = nodesWithStorage.filter(node => 
-        (node.storage_total - node.storage_used) < fileSize
-      );
-      
-      if (insufficientNodes.length > 0) {
-        const nodeNames = insufficientNodes.map(node => node.name).join(", ");
-        toast({
-          title: "Insufficient storage",
-          description: `The following nodes don't have enough space: ${nodeNames}`,
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return;
-      }
-      
-      // Create the file
-      const fileData: FileInsert = {
-        name: fileName,
-        size: fileSize,
-        user_id: user.id
-      };
-      
-      toast({
-        title: "Uploading file",
-        description: "Your file is being processed..."
-      });
-      
-      const newFile = await onCreateFile(fileData);
-      
-      // Create the replicas
-      const replicaPromises = selectedNodes.map(nodeId => {
-        const replicaData: ReplicaInsert = {
-          file_id: newFile.id,
-          node_id: nodeId
-        };
-        return onCreateReplica(replicaData);
-      });
-      
-      await Promise.all(replicaPromises);
-      
-      toast({
-        title: "File uploaded successfully",
-        description: `File "${fileName}" has been stored across ${selectedNodes.length} nodes`,
-      });
-      
-      // Reset form and close dialog
-      setFileName("");
-      setFileSize(1);
+    if (result) {
+      setSelectedFile(null);
       setSelectedNodes([]);
       setOpen(false);
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
   
@@ -159,37 +103,46 @@ export function UploadFileDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="fileName">File Name</Label>
-            <Input
-              id="fileName"
-              value={fileName}
-              onChange={(e) => setFileName(e.target.value)}
-              placeholder="Enter file name"
-              required
+            <Label htmlFor="file">Select File</Label>
+            <input
+              type="file"
+              id="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
             />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="fileSize">File Size (MB)</Label>
-            <Input
-              id="fileSize"
-              type="number"
-              min={1}
-              value={fileSize}
-              onChange={(e) => setFileSize(Number(e.target.value))}
-              required
-            />
+            <div className="flex items-center gap-2">
+              <Button 
+                type="button" 
+                onClick={handleUploadClick}
+                variant="outline"
+                className="w-full"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Browse Files
+              </Button>
+            </div>
+            {selectedFile && (
+              <div className="flex items-center p-2 mt-2 bg-muted rounded-md">
+                <FileSymlink className="h-4 w-4 mr-2 text-blue-500" />
+                <span className="text-sm truncate">{selectedFile.name}</span>
+                <span className="text-xs ml-auto text-muted-foreground">
+                  {Math.round(selectedFile.size / 1024)} KB
+                </span>
+              </div>
+            )}
           </div>
           
           <div className="space-y-2">
             <Label>Select Nodes for Storage</Label>
-            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-2">
               {onlineNodes.length === 0 ? (
                 <p className="text-sm text-gray-500 col-span-2">No online nodes available</p>
               ) : (
                 onlineNodes.map((node) => {
+                  const fileSizeMB = selectedFile ? Math.ceil(selectedFile.size / (1024 * 1024)) : 0;
                   const availableStorage = node.storage_total - node.storage_used;
-                  const hasEnoughSpace = availableStorage >= fileSize;
+                  const hasEnoughSpace = availableStorage >= fileSizeMB;
                   
                   return (
                     <div key={node.id} className="flex items-center space-x-2">
@@ -205,14 +158,14 @@ export function UploadFileDialog({
                           }
                         }}
                         className="rounded"
-                        disabled={!hasEnoughSpace}
+                        disabled={!hasEnoughSpace && fileSizeMB > 0}
                       />
                       <label 
                         htmlFor={`node-${node.id}`} 
-                        className={`text-sm ${!hasEnoughSpace ? 'text-gray-400' : ''}`}
+                        className={`text-sm ${!hasEnoughSpace && fileSizeMB > 0 ? 'text-gray-400' : ''}`}
                       >
                         {node.name} ({node.storage_used}/{node.storage_total} GB)
-                        {!hasEnoughSpace && <span className="ml-1 text-red-500">(Full)</span>}
+                        {!hasEnoughSpace && fileSizeMB > 0 && <span className="ml-1 text-red-500">(Not enough space)</span>}
                       </label>
                     </div>
                   );
@@ -226,8 +179,12 @@ export function UploadFileDialog({
             )}
           </div>
           
-          <Button type="submit" disabled={isLoading || onlineNodes.length === 0 || selectedNodes.length === 0}>
-            {isLoading ? "Uploading..." : "Upload File"}
+          <Button 
+            type="submit" 
+            disabled={isUploading || onlineNodes.length === 0 || selectedNodes.length === 0 || !selectedFile}
+            className="w-full"
+          >
+            {isUploading ? "Uploading..." : "Upload File"}
           </Button>
         </form>
       </DialogContent>
