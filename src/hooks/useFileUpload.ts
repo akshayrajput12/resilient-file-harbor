@@ -51,7 +51,13 @@ export function useFileUpload() {
         user_id: nodes[0]?.user_id // Safe to use as nodes are already filtered by current user
       };
       
-      const newFile = await createFile(fileData);
+      // Use a Promise to handle the asynchronous createFile mutation
+      const newFile = await new Promise<SupabaseFile | null>((resolve) => {
+        createFile(fileData, {
+          onSuccess: (data) => resolve(data as SupabaseFile),
+          onError: () => resolve(null)
+        });
+      });
       
       if (!newFile) {
         throw new Error("Failed to create file record");
@@ -59,9 +65,14 @@ export function useFileUpload() {
       
       // Create replicas for each selected node
       const replicaPromises = selectedNodeIds.map(nodeId => {
-        return createReplica({
-          file_id: newFile.id,
-          node_id: nodeId
+        return new Promise((resolve, reject) => {
+          createReplica({
+            file_id: newFile.id,
+            node_id: nodeId
+          }, {
+            onSuccess: () => resolve(true),
+            onError: (error) => reject(error)
+          });
         });
       });
       

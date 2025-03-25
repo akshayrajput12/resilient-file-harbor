@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { getFiles, createFile, deleteFile } from "@/services/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-import { FileInsert } from "@/types/supabase";
+import { FileInsert, File } from "@/types/supabase";
 
 export function useFiles() {
   const queryClient = useQueryClient();
@@ -17,13 +17,14 @@ export function useFiles() {
 
   const createFileMutation = useMutation({
     mutationFn: (file: FileInsert) => createFile(file),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["files"] });
       queryClient.invalidateQueries({ queryKey: ["nodes"] }); // Also invalidate nodes as storage may change
       toast({
         title: "File uploaded",
         description: "Your file has been uploaded successfully",
       });
+      return data; // Ensure data is returned
     },
     onError: (error: Error) => {
       toast({
@@ -31,6 +32,7 @@ export function useFiles() {
         description: error.message,
         variant: "destructive",
       });
+      throw error; // Re-throw the error to be caught by callers
     },
   });
 

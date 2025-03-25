@@ -15,13 +15,14 @@ export function useReplicas(fileId?: string) {
 
   const createReplicaMutation = useMutation({
     mutationFn: (replica: ReplicaInsert) => createReplica(replica),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["replicas"] });
       queryClient.invalidateQueries({ queryKey: ["nodes"] }); // Also invalidate nodes as storage may change
       toast({
         title: "Replica created",
         description: "Your file replica has been created successfully",
       });
+      return data; // Ensure data is returned
     },
     onError: (error: Error) => {
       toast({
@@ -29,6 +30,7 @@ export function useReplicas(fileId?: string) {
         description: error.message,
         variant: "destructive",
       });
+      throw error; // Re-throw the error to be caught by callers
     },
   });
 
