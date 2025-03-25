@@ -1,8 +1,6 @@
-
 import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FilePlus, Upload, FileSymlink } from "lucide-react";
 import { Node, FileInsert, ReplicaInsert } from "@/types/supabase";
@@ -78,7 +76,7 @@ export function UploadFileDialog({
     
     const result = await uploadFile(selectedFile, selectedNodes);
     
-    if (result) {
+    if (result !== null) {
       setSelectedFile(null);
       setSelectedNodes([]);
       setOpen(false);

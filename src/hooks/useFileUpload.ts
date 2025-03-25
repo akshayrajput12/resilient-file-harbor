@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useFiles } from "./useFiles";
 import { useNodes } from "./useNodes";
 import { useReplicas } from "./useReplicas";
-import { FileInsert } from "@/types/supabase";
+import { FileInsert, File } from "@/types/supabase";
 import { toast } from "./use-toast";
 
 export function useFileUpload() {
@@ -12,8 +12,8 @@ export function useFileUpload() {
   const { nodes } = useNodes();
   const { createReplica } = useReplicas();
 
-  const uploadFile = async (file: File, selectedNodeIds: string[]) => {
-    if (!file) return;
+  const uploadFile = async (file: File, selectedNodeIds: string[]): Promise<File | null> => {
+    if (!file) return null;
     
     setIsUploading(true);
     
@@ -36,7 +36,7 @@ export function useFileUpload() {
           description: `The following nodes don't have enough space: ${nodeNames}`,
           variant: "destructive"
         });
-        return;
+        return null;
       }
       
       toast({
@@ -52,6 +52,10 @@ export function useFileUpload() {
       };
       
       const newFile = await createFile(fileData);
+      
+      if (!newFile) {
+        throw new Error("Failed to create file record");
+      }
       
       // Create replicas for each selected node
       const replicaPromises = selectedNodeIds.map(nodeId => {
