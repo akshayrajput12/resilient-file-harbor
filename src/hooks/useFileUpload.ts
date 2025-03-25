@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useFiles } from "./useFiles";
 import { useNodes } from "./useNodes";
 import { useReplicas } from "./useReplicas";
-import { FileInsert, File } from "@/types/supabase";
+import { FileInsert, File as SupabaseFile } from "@/types/supabase";
 import { toast } from "./use-toast";
 
 export function useFileUpload() {
@@ -12,7 +12,7 @@ export function useFileUpload() {
   const { nodes } = useNodes();
   const { createReplica } = useReplicas();
 
-  const uploadFile = async (file: File, selectedNodeIds: string[]): Promise<File | null> => {
+  const uploadFile = async (file: globalThis.File, selectedNodeIds: string[]): Promise<SupabaseFile | null> => {
     if (!file) return null;
     
     setIsUploading(true);

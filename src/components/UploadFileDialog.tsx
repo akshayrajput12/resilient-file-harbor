@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,7 @@ export function UploadFileDialog({
 }: UploadFileDialogProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFile, setSelectedFile] = useState<globalThis.File | null>(null);
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
   const { uploadFile, isUploading } = useFileUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
