@@ -130,17 +130,23 @@ export const createReplica = async (replica: ReplicaInsert) => {
   if (error) throw error;
   
   // Update the node's storage_used
-  const { error: nodeError } = await supabase
+  const { data: nodeData, error: nodeError } = await supabase
     .from('nodes')
-    .update({
-      storage_used: supabase.rpc('increment_storage', { 
-        node_id: replica.node_id, 
-        size_to_add: file.size 
-      })
-    })
+    .select('storage_used')
+    .eq('id', replica.node_id)
+    .single();
+    
+  if (nodeError) throw nodeError;
+  
+  // Calculate new storage value and update
+  const newStorageUsed = nodeData.storage_used + file.size;
+  
+  const { error: updateError } = await supabase
+    .from('nodes')
+    .update({ storage_used: newStorageUsed })
     .eq('id', replica.node_id);
   
-  if (nodeError) throw nodeError;
+  if (updateError) throw updateError;
   
   return data as Replica;
 };
@@ -149,11 +155,29 @@ export const deleteReplica = async (id: string) => {
   // First, get the replica to find the node and file
   const { data: replica, error: replicaGetError } = await supabase
     .from('replicas')
-    .select('*, files(size)')
+    .select('node_id, file_id')
     .eq('id', id)
     .single();
   
   if (replicaGetError) throw replicaGetError;
+  
+  // Get the file size
+  const { data: file, error: fileError } = await supabase
+    .from('files')
+    .select('size')
+    .eq('id', replica.file_id)
+    .single();
+    
+  if (fileError) throw fileError;
+  
+  // Get current node storage
+  const { data: node, error: nodeError } = await supabase
+    .from('nodes')
+    .select('storage_used')
+    .eq('id', replica.node_id)
+    .single();
+    
+  if (nodeError) throw nodeError;
   
   // Delete the replica
   const { error } = await supabase
@@ -163,18 +187,15 @@ export const deleteReplica = async (id: string) => {
   
   if (error) throw error;
   
-  // Update the node's storage_used
-  const { error: nodeError } = await supabase
+  // Calculate new storage value and update
+  const newStorageUsed = Math.max(0, node.storage_used - file.size);
+  
+  const { error: updateError } = await supabase
     .from('nodes')
-    .update({
-      storage_used: supabase.rpc('decrement_storage', { 
-        node_id: replica.node_id, 
-        size_to_subtract: replica.files.size 
-      })
-    })
+    .update({ storage_used: newStorageUsed })
     .eq('id', replica.node_id);
   
-  if (nodeError) throw nodeError;
+  if (updateError) throw updateError;
   
   return true;
 };
