@@ -25,6 +25,7 @@ interface CreateNodeDialogProps extends React.ButtonHTMLAttributes<HTMLButtonEle
   variant?: ButtonProps["variant"];
   className?: string;
   children?: React.ReactNode;
+  maxStorageMB?: number; // Add this prop
 }
 
 export function CreateNodeDialog({ 
@@ -32,6 +33,7 @@ export function CreateNodeDialog({
   variant = "default", 
   className, 
   children,
+  maxStorageMB = 100, // Default to 100MB
   ...props 
 }: CreateNodeDialogProps) {
   const [open, setOpen] = useState(false);
@@ -41,7 +43,7 @@ export function CreateNodeDialog({
     resolver: zodResolver(nodeSchema),
     defaultValues: {
       name: "",
-      storage_total: 100,
+      storage_total: maxStorageMB || 100, // Use the maxStorageMB prop or default to 100
     },
   });
   
@@ -98,13 +100,14 @@ export function CreateNodeDialog({
               name="storage_total"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Storage Capacity (GB)</FormLabel>
+                  <FormLabel>Storage Capacity (MB)</FormLabel>
                   <FormControl>
                     <Input 
                       type="number" 
-                      placeholder="100" 
+                      placeholder={maxStorageMB?.toString() || "100"} 
                       {...field} 
                       onChange={(e) => field.onChange(parseInt(e.target.value))}
+                      max={maxStorageMB}
                     />
                   </FormControl>
                   <FormMessage />
