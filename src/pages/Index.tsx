@@ -198,18 +198,25 @@ const Index = () => {
         </AnimateOnMount>
 
         <Tabs defaultValue="dashboard" className="w-full">
+          {/* Fix is here - making sure TabsList, TabsTrigger, etc. are used correctly */}
           <TabsList className="mb-6">
-            <TabsTrigger value="dashboard" className="gap-2">
-              <Database className="h-4 w-4" />
-              Dashboard
+            <TabsTrigger value="dashboard">
+              <span className="flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                Dashboard
+              </span>
             </TabsTrigger>
-            <TabsTrigger value="files" className="gap-2">
-              <FileIcon className="h-4 w-4" />
-              Files
+            <TabsTrigger value="files">
+              <span className="flex items-center gap-2">
+                <FileIcon className="h-4 w-4" />
+                Files
+              </span>
             </TabsTrigger>
-            <TabsTrigger value="nodes" className="gap-2">
-              <ServerIcon className="h-4 w-4" />
-              Nodes
+            <TabsTrigger value="nodes">
+              <span className="flex items-center gap-2">
+                <ServerIcon className="h-4 w-4" />
+                Nodes
+              </span>
             </TabsTrigger>
           </TabsList>
           
