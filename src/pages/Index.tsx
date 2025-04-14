@@ -1,4 +1,4 @@
-
+import React from 'react';
 import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -198,7 +198,6 @@ const Index = () => {
         </AnimateOnMount>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          {/* Fix is here - making sure TabsList, TabsTrigger, etc. are used correctly */}
           <TabsList className="mb-6">
             <TabsTrigger value="dashboard">
               <span className="flex items-center gap-2">
