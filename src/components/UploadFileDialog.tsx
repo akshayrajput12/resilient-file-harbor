@@ -16,7 +16,6 @@ interface UploadFileDialogProps {
   children?: React.ReactNode;
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | null | undefined;
   className?: string;
-  maxFileSizeMB?: number; // Add this prop
 }
 
 export function UploadFileDialog({ 
@@ -25,8 +24,7 @@ export function UploadFileDialog({
   onCreateReplica,
   children,
   variant = "default",
-  className,
-  maxFileSizeMB = 100 // Default to 100MB
+  className
 }: UploadFileDialogProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -39,17 +37,7 @@ export function UploadFileDialog({
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      // Check if file size exceeds the maximum
-      if (file.size > maxFileSizeMB * 1024 * 1024) {
-        toast({
-          title: "File too large",
-          description: `Maximum file size is ${maxFileSizeMB}MB`,
-          variant: "destructive"
-        });
-        return;
-      }
-      setSelectedFile(file);
+      setSelectedFile(e.target.files[0]);
     }
   };
   
@@ -142,9 +130,6 @@ export function UploadFileDialog({
                 </span>
               </div>
             )}
-            <p className="text-xs text-muted-foreground">
-              Maximum file size: {maxFileSizeMB}MB
-            </p>
           </div>
           
           <div className="space-y-2">
@@ -178,7 +163,7 @@ export function UploadFileDialog({
                         htmlFor={`node-${node.id}`} 
                         className={`text-sm ${!hasEnoughSpace && fileSizeMB > 0 ? 'text-gray-400' : ''}`}
                       >
-                        {node.name} ({node.storage_used}/{node.storage_total} MB)
+                        {node.name} ({node.storage_used}/{node.storage_total} GB)
                         {!hasEnoughSpace && fileSizeMB > 0 && <span className="ml-1 text-red-500">(Not enough space)</span>}
                       </label>
                     </div>

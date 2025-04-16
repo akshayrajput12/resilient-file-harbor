@@ -1,11 +1,11 @@
-import React from 'react';
+
 import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, HardDrive, FilePlus2, Eye, SunIcon, MoonIcon, Database, ServerIcon, FileIcon } from "lucide-react";
+import { Download, HardDrive, FilePlus2, Eye } from "lucide-react";
 import AnimateOnMount from '@/components/AnimateOnMount';
-import { fadeIn, slideUp, slideInLeft, slideInRight } from '@/lib/animation';
+import { slideUp, slideInLeft, slideInRight } from '@/lib/animation';
 import { useNodes } from '@/hooks/useNodes';
 import { useFiles } from '@/hooks/useFiles';
 import { CreateNodeDialog } from '@/components/CreateNodeDialog';
@@ -17,26 +17,17 @@ import { ReplicaInsert } from '@/types/supabase';
 import Navbar from '@/components/Navbar';
 import { useReplicas } from '@/hooks/useReplicas';
 import { toast } from '@/hooks/use-toast';
-import { FileViewer } from '@/components/FileViewer';
-import { useTheme } from '@/contexts/ThemeContext';
-
-const MAX_NODE_STORAGE = 100; // 100MB max per node
 
 const Index = () => {
-  const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
   const { nodes, isLoadingNodes, createNode, updateNode } = useNodes();
   const { files, isLoadingFiles, createFile, deleteFile } = useFiles();
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const { replicas, createReplica } = useReplicas(selectedFile || undefined);
-  const [isViewerOpen, setIsViewerOpen] = useState(false);
-  const [viewingFile, setViewingFile] = useState<any>(null);
 
   const activeNodes = nodes.filter(node => node.status === 'online');
   const totalStorage = nodes.reduce((acc, node) => acc + node.storage_total, 0);
   const usedStorage = nodes.reduce((acc, node) => acc + node.storage_used, 0);
-  const availableStorage = totalStorage - usedStorage;
-  const storagePercentage = totalStorage > 0 ? (usedStorage / totalStorage) * 100 : 0;
   const averageReplicationFactor = files.length > 0 
     ? files.reduce((acc, file) => acc + (file.replicas?.length || 0), 0) / files.length 
     : 0;
@@ -60,14 +51,23 @@ const Index = () => {
   };
 
   const handleViewFile = (fileId: string, fileName: string) => {
-    const file = files.find(f => f.id === fileId);
-    if (file) {
-      setViewingFile(file);
-      setIsViewerOpen(true);
-    }
+    // In a real application, this would open or download the file
+    toast({
+      title: "Viewing File",
+      description: `Opening file: ${fileName}`,
+    });
+    
+    // Simulate file viewing by showing content after a delay
+    setTimeout(() => {
+      toast({
+        title: "File Content",
+        description: `This is the simulated content of file: ${fileName}`,
+      });
+    }, 1000);
   };
 
   const handleDownloadFile = (fileId: string, fileName: string) => {
+    // In a real application, this would download the file
     toast({
       title: "Downloading File",
       description: `Starting download for: ${fileName}`,
@@ -138,102 +138,37 @@ const Index = () => {
     }, 3000);
   };
 
-  const renderStorageUsage = () => {
-    // Different colors based on storage usage percentage
-    let colorClass = "bg-green-500 dark:bg-green-600";
-    if (storagePercentage > 70) colorClass = "bg-yellow-500 dark:bg-yellow-600";
-    if (storagePercentage > 90) colorClass = "bg-red-500 dark:bg-red-600";
-    
-    return (
-      <div className="space-y-2">
-        <div className="text-xs flex justify-between">
-          <span>{usedStorage} MB used</span>
-          <span>{totalStorage} MB total</span>
-        </div>
-        <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-          <div 
-            className={`h-full ${colorClass} transition-all duration-500`}
-            style={{ width: `${storagePercentage}%` }}
-          />
-        </div>
-        <div className="text-xs text-muted-foreground">
-          {availableStorage} MB available ({storagePercentage.toFixed(1)}% used)
-        </div>
-      </div>
-    );
-  };
-
   if (isLoadingNodes || isLoadingFiles) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-2">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-muted-foreground">Loading your distributed system...</p>
-        </div>
-      </div>
-    );
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
-      <Navbar>
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={toggleTheme}
-          className="ml-auto"
-        >
-          {theme === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
-        </Button>
-      </Navbar>
-      
-      <div className="p-4 md:p-8 container max-w-7xl">
-        <AnimateOnMount animation={fadeIn} className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-purple-500 dark:from-purple-400 dark:to-blue-500 bg-clip-text text-transparent">
-            Distributed File System
-          </h1>
-          <p className="text-muted-foreground">
-            Store files across multiple nodes with fault tolerance and high availability
-          </p>
+    <div className="min-h-screen bg-gray-100">
+      <Navbar />
+      <div className="p-4 md:p-8">
+        <AnimateOnMount animation={slideUp} className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Distributed File System</h1>
+          <p className="text-gray-600">Store files across multiple nodes with fault tolerance</p>
         </AnimateOnMount>
 
         <Tabs defaultValue="dashboard" className="w-full">
           <TabsList className="mb-6">
-            <TabsTrigger value="dashboard">
-              <span className="flex items-center gap-2">
-                <Database className="h-4 w-4" />
-                Dashboard
-              </span>
-            </TabsTrigger>
-            <TabsTrigger value="files">
-              <span className="flex items-center gap-2">
-                <FileIcon className="h-4 w-4" />
-                Files
-              </span>
-            </TabsTrigger>
-            <TabsTrigger value="nodes">
-              <span className="flex items-center gap-2">
-                <ServerIcon className="h-4 w-4" />
-                Nodes
-              </span>
-            </TabsTrigger>
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="files">Files</TabsTrigger>
+            <TabsTrigger value="nodes">Nodes</TabsTrigger>
           </TabsList>
           
           <TabsContent value="dashboard">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <AnimateOnMount animation={slideUp} delay={100}>
-                <Card className="border dark:border-gray-800 overflow-hidden relative transition-all duration-300 hover:shadow-lg">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent dark:from-primary/10 pointer-events-none" />
+                <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileIcon className="h-5 w-5 text-primary" />
-                      Files
-                    </CardTitle>
+                    <CardTitle>Files</CardTitle>
                     <CardDescription>Stored files and replicas</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-4xl font-bold mb-2 text-primary">{files.length}</div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-4xl font-bold mb-2">{files.length}</div>
+                    <div className="text-sm text-gray-500">
                       Total replication factor: {averageReplicationFactor.toFixed(1)}x
                     </div>
                     <div className="mt-4 flex gap-2">
@@ -241,7 +176,6 @@ const Index = () => {
                         nodes={nodes} 
                         onCreateFile={handleCreateFile}
                         onCreateReplica={handleCreateReplica}
-                        maxFileSizeMB={MAX_NODE_STORAGE}
                       />
                     </div>
                   </CardContent>
@@ -249,80 +183,43 @@ const Index = () => {
               </AnimateOnMount>
               
               <AnimateOnMount animation={slideInLeft} delay={200}>
-                <Card className="border dark:border-gray-800 overflow-hidden relative transition-all duration-300 hover:shadow-lg">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent dark:from-blue-500/10 pointer-events-none" />
+                <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <ServerIcon className="h-5 w-5 text-blue-500" />
-                      System Status
-                    </CardTitle>
+                    <CardTitle>System Status</CardTitle>
                     <CardDescription>Node health and storage</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {nodes.length === 0 ? (
-                      <div className="text-center py-6">
-                        <p className="text-muted-foreground mb-4">No nodes available</p>
-                        <CreateNodeDialog 
-                          onCreateNode={(nodeData) => createNode(nodeData)} 
-                          maxStorageMB={MAX_NODE_STORAGE}
-                        />
-                      </div>
-                    ) : (
-                      <div className="space-y-6">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-medium">System Storage</span>
-                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-primary/10 text-primary">
-                            {activeNodes.length}/{nodes.length} nodes online
-                          </span>
-                        </div>
-                        
-                        {renderStorageUsage()}
-                        
-                        <div className="space-y-3 mt-4">
-                          {nodes.slice(0, 3).map((node) => (
-                            <div key={node.id} className="space-y-1">
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm">{node.name}</span>
-                                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                  node.status === 'online' ? 
-                                    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
-                                    'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                                }`}>
-                                  {node.status === 'online' ? 'Online' : 'Offline'}
-                                </span>
-                              </div>
-                              <div className="relative w-full h-2 bg-muted rounded-full overflow-hidden">
-                                <div 
-                                  className="absolute top-0 left-0 h-full bg-blue-500 dark:bg-blue-600 transition-all duration-300"
-                                  style={{ width: `${(node.storage_used / node.storage_total) * 100}%` }}
-                                ></div>
-                              </div>
-                              <div className="text-xs text-muted-foreground">{Math.round((node.storage_used / node.storage_total) * 100)}% used</div>
+                    <div className="space-y-4">
+                      {nodes.length === 0 ? (
+                        <p className="text-sm text-gray-500">No nodes available. Add a node to get started.</p>
+                      ) : (
+                        nodes.map((node) => (
+                          <div key={node.id} className="space-y-1">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm">{node.name}</span>
+                              <span className={`text-xs ${node.status === 'online' ? 'text-green-500' : 'text-red-500'}`}>
+                                {node.status === 'online' ? 'Online' : 'Offline'}
+                              </span>
                             </div>
-                          ))}
-                          
-                          {nodes.length > 3 && (
-                            <div className="text-center pt-2">
-                              <Button variant="link" size="sm" asChild>
-                                <a href="#nodes-tab">View all {nodes.length} nodes</a>
-                              </Button>
+                            <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className="absolute top-0 left-0 h-full bg-blue-500"
+                                style={{ width: `${(node.storage_used / node.storage_total) * 100}%` }}
+                              ></div>
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                            <div className="text-xs text-gray-500">{Math.round((node.storage_used / node.storage_total) * 100)}% used</div>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </AnimateOnMount>
               
               <AnimateOnMount animation={slideInRight} delay={300}>
-                <Card className="border dark:border-gray-800 overflow-hidden relative transition-all duration-300 hover:shadow-lg">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent dark:from-purple-500/10 pointer-events-none" />
+                <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <HardDrive className="h-5 w-5 text-purple-500" />
-                      Actions
-                    </CardTitle>
+                    <CardTitle>Actions</CardTitle>
                     <CardDescription>System operations</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -332,7 +229,6 @@ const Index = () => {
                       onCreateReplica={handleCreateReplica}
                       variant="outline"
                       className="w-full justify-start"
-                      maxFileSizeMB={MAX_NODE_STORAGE}
                     >
                       <FilePlus2 className="mr-2 h-4 w-4" />
                       Add New File
@@ -341,7 +237,6 @@ const Index = () => {
                       onCreateNode={(nodeData) => createNode(nodeData)}
                       variant="outline"
                       className="w-full justify-start"
-                      maxStorageMB={MAX_NODE_STORAGE}
                     />
                     <Button 
                       className="w-full justify-start" 
@@ -357,21 +252,12 @@ const Index = () => {
             </div>
           </TabsContent>
           
-          <TabsContent value="files" id="files-tab">
+          <TabsContent value="files">
             <AnimateOnMount animation={slideUp}>
-              <Card className="border dark:border-gray-800 overflow-hidden relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent dark:from-primary/10 pointer-events-none" />
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Stored Files</CardTitle>
-                    <CardDescription>Files distributed across nodes</CardDescription>
-                  </div>
-                  <UploadFileDialog 
-                    nodes={nodes} 
-                    onCreateFile={handleCreateFile}
-                    onCreateReplica={handleCreateReplica}
-                    maxFileSizeMB={MAX_NODE_STORAGE}
-                  />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Stored Files</CardTitle>
+                  <CardDescription>Files distributed across nodes</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <FileTable 
@@ -386,17 +272,12 @@ const Index = () => {
             </AnimateOnMount>
           </TabsContent>
           
-          <TabsContent value="nodes" id="nodes-tab">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <TabsContent value="nodes">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {nodes.length === 0 ? (
-                <div className="col-span-full text-center py-8">
-                  <AnimateOnMount animation={slideUp}>
-                    <p className="text-muted-foreground mb-4">No nodes available</p>
-                    <CreateNodeDialog 
-                      onCreateNode={(nodeData) => createNode(nodeData)}
-                      maxStorageMB={MAX_NODE_STORAGE}
-                    />
-                  </AnimateOnMount>
+                <div className="col-span-3 text-center py-8">
+                  <p className="text-gray-500 mb-4">No nodes available</p>
+                  <CreateNodeDialog onCreateNode={(nodeData) => createNode(nodeData)} />
                 </div>
               ) : (
                 nodes.map((node, i) => (
@@ -413,14 +294,6 @@ const Index = () => {
           </TabsContent>
         </Tabs>
       </div>
-      
-      {viewingFile && (
-        <FileViewer 
-          file={viewingFile} 
-          isOpen={isViewerOpen} 
-          onClose={() => setIsViewerOpen(false)} 
-        />
-      )}
     </div>
   );
 };

@@ -25,16 +25,6 @@ export function useFileUpload() {
       
       const fileSizeMB = Math.ceil(file.size / (1024 * 1024));
       
-      // Ensure file size doesn't exceed 100MB
-      if (fileSizeMB > 100) {
-        toast({
-          title: "File too large",
-          description: "Maximum file size is 100MB",
-          variant: "destructive"
-        });
-        return null;
-      }
-      
       const insufficientNodes = onlineNodes.filter(node => 
         (node.storage_total - node.storage_used) < fileSizeMB
       );
