@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { type Node, type File, type Replica, type NodeInsert, type FileInsert, type ReplicaInsert, type NodeUpdate } from '@/types/supabase';
 
@@ -66,10 +65,15 @@ export const getFiles = async () => {
     replicas: replicas.filter((replica) => replica.file_id === file.id)
   }));
   
-  return filesWithReplicas as File[];
+  return filesWithReplicas as SupabaseFile[];
 };
 
 export const createFile = async (file: FileInsert) => {
+  // Make sure we have the storage_path
+  if (!file.storage_path) {
+    throw new Error('Storage path is required');
+  }
+  
   const { data, error } = await supabase
     .from('files')
     .insert(file)
@@ -77,11 +81,33 @@ export const createFile = async (file: FileInsert) => {
     .single();
   
   if (error) throw error;
-  return data as File;
+  return data as SupabaseFile;
 };
 
 export const deleteFile = async (id: string) => {
-  // First, we need to delete all replicas of this file
+  // First, get the file to get its storage path
+  const { data: file, error: fileError } = await supabase
+    .from('files')
+    .select('storage_path')
+    .eq('id', id)
+    .single();
+  
+  if (fileError) throw fileError;
+  
+  // Delete the file from storage if we have a path
+  if (file.storage_path) {
+    const { error: storageError } = await supabase
+      .storage
+      .from('file_uploads')
+      .remove([file.storage_path]);
+    
+    if (storageError) {
+      console.error('Error deleting from storage:', storageError);
+      // Continue even if storage deletion fails
+    }
+  }
+  
+  // Now delete all replicas of this file
   const { error: replicasError } = await supabase
     .from('replicas')
     .delete()

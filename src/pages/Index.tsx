@@ -374,7 +374,7 @@ const Index = () => {
                   </CardHeader>
                   <CardContent className="relative z-10">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <MotionDiv 
+                      <motion.div 
                         className="flex flex-col space-y-2"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -392,9 +392,9 @@ const Index = () => {
                             transition={{ duration: 0.8, delay: 0.2 }}
                           ></MotionDiv>
                         </div>
-                      </MotionDiv>
+                      </motion.div>
                       
-                      <MotionDiv 
+                      <motion.div 
                         className="flex flex-col space-y-2"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -415,9 +415,9 @@ const Index = () => {
                             ></MotionDiv>
                           ))}
                         </div>
-                      </MotionDiv>
+                      </motion.div>
                       
-                      <MotionDiv 
+                      <motion.div 
                         className="flex flex-col space-y-2"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -434,7 +434,7 @@ const Index = () => {
                           <span className="inline-block w-3 h-3 bg-red-500 rounded-full ml-4"></span>
                           <span className="text-xs">{nodes.length - activeNodes.length} Offline</span>
                         </div>
-                      </MotionDiv>
+                      </motion.div>
                     </div>
                   </CardContent>
                 </Card>

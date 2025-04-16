@@ -11,7 +11,7 @@ export type Node = Database['public']['Tables']['nodes']['Row'] & {
 };
 export type File = Database['public']['Tables']['files']['Row'] & {
   replicas?: (Replica & { nodes?: Node })[];
-  storage_path?: string; // Added storage path
+  storage_path: string; // Make storage_path required
 };
 export type Replica = Database['public']['Tables']['replicas']['Row'] & {
   nodes?: Node;
@@ -21,7 +21,7 @@ export type Replica = Database['public']['Tables']['replicas']['Row'] & {
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
 export type NodeInsert = Database['public']['Tables']['nodes']['Insert'];
 export type FileInsert = Database['public']['Tables']['files']['Insert'] & {
-  storage_path?: string; // Added storage path
+  storage_path: string; // Make storage_path required
 };
 export type ReplicaInsert = Database['public']['Tables']['replicas']['Insert'];
 
@@ -29,6 +29,6 @@ export type ReplicaInsert = Database['public']['Tables']['replicas']['Insert'];
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 export type NodeUpdate = Database['public']['Tables']['nodes']['Update'];
 export type FileUpdate = Database['public']['Tables']['files']['Update'] & {
-  storage_path?: string; // Added storage path
+  storage_path?: string; // Allow optional updates to storage_path
 };
 export type ReplicaUpdate = Database['public']['Tables']['replicas']['Update'];
