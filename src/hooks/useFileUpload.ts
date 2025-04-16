@@ -5,12 +5,14 @@ import { useNodes } from "./useNodes";
 import { useReplicas } from "./useReplicas";
 import { FileInsert, File as SupabaseFile } from "@/types/supabase";
 import { toast } from "./use-toast";
+import { useFileStorage } from "./useFileStorage";
 
 export function useFileUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const { createFile } = useFiles();
   const { nodes } = useNodes();
   const { createReplica } = useReplicas();
+  const { uploadFile: storeFile } = useFileStorage();
 
   const uploadFile = async (file: globalThis.File, selectedNodeIds: string[]): Promise<SupabaseFile | null> => {
     if (!file) return null;
@@ -44,11 +46,19 @@ export function useFileUpload() {
         description: "Your file is being processed..."
       });
       
-      // Create file entry in database
+      // Upload file to Supabase Storage
+      const fileUploadResult = await storeFile(file);
+      
+      if (!fileUploadResult) {
+        throw new Error("Failed to upload file to storage");
+      }
+      
+      // Create file entry in database with storage path
       const fileData: FileInsert = {
         name: file.name,
         size: fileSizeMB,
-        user_id: nodes[0]?.user_id // Safe to use as nodes are already filtered by current user
+        user_id: nodes[0]?.user_id, // Safe to use as nodes are already filtered by current user
+        storage_path: fileUploadResult.path // Add storage path to file record
       };
       
       // Use a Promise to handle the asynchronous createFile mutation

@@ -18,6 +18,8 @@ import { useReplicas } from '@/hooks/useReplicas';
 import { toast } from '@/hooks/use-toast';
 import { FileViewerDialog } from '@/components/FileViewerDialog';
 import { motion } from 'framer-motion';
+import { useTheme } from '@/hooks/useTheme';
+import { useFileStorage } from '@/hooks/useFileStorage';
 
 const Index = () => {
   const { user } = useAuth();
@@ -27,12 +29,13 @@ const Index = () => {
   const { replicas, createReplica, deleteReplica } = useReplicas(selectedFile || undefined);
   const { theme, toggleTheme } = useTheme();
   const [fileToView, setFileToView] = useState<{ id: string; name: string } | null>(null);
+  const { downloadFile } = useFileStorage();
 
   useEffect(() => {
     if (theme === 'dark') {
       toggleTheme();
     }
-  }, [theme]);
+  }, [theme, toggleTheme]);
 
   const activeNodes = nodes.filter(node => node.status === 'online');
   const totalStorage = nodes.reduce((acc, node) => acc + node.storage_total, 0);
@@ -91,31 +94,18 @@ const Index = () => {
     setFileToView({ id: fileId, name: fileName });
   };
 
-  const handleDownloadFile = (fileId: string, fileName: string) => {
-    toast({
-      title: "Downloading File",
-      description: `Starting download for: ${fileName}`,
-    });
+  const handleDownloadFile = async (fileId: string, fileName: string) => {
+    const file = files.find(f => f.id === fileId);
     
-    const dummyContent = `This is simulated content for the file "${fileName}".\n\nIn a real implementation, this would contain the actual file content.\n\nFile ID: ${fileId}`;
-    const blob = new Blob([dummyContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
+    if (file?.storage_path) {
+      await downloadFile(file.storage_path, fileName);
+    } else {
       toast({
-        title: "Download Complete",
-        description: `File ${fileName} has been downloaded successfully`,
+        title: "Download error",
+        description: "File path not found.",
+        variant: "destructive"
       });
-    }, 1000);
+    }
   };
 
   const handleRebalanceData = () => {
@@ -246,7 +236,7 @@ const Index = () => {
                         initial={{ width: 0 }}
                         animate={{ width: `${storagePercentage}%` }}
                         transition={{ duration: 0.8, delay: 0.2 }}
-                      ></MotionDiv>
+                      />
                     </div>
                     
                     <div className="mt-4 flex gap-2">
