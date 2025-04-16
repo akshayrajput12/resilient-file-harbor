@@ -8,13 +8,12 @@ export function useTheme() {
     // Check for saved theme preference
     const savedTheme = localStorage.getItem('theme') as Theme | null;
     
-    // Check for system preference if no saved theme
+    // Default to light mode instead of system preference
     if (!savedTheme) {
-      const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      return systemPreference;
+      return 'light';
     }
     
-    return savedTheme || 'light';
+    return savedTheme;
   });
 
   // Apply theme class to document

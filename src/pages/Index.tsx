@@ -36,6 +36,7 @@ const Index = () => {
   const averageReplicationFactor = files.length > 0 
     ? files.reduce((acc, file) => acc + (file.replicas?.length || 0), 0) / files.length 
     : 0;
+  const storagePercentage = totalStorage > 0 ? Math.round((usedStorage / totalStorage) * 100) : 0;
 
   const handleToggleNodeStatus = (nodeId: string, status: string) => {
     updateNode({ id: nodeId, status });
@@ -95,13 +96,27 @@ const Index = () => {
       description: `Starting download for: ${fileName}`,
     });
     
-    // Simulate download completion after a delay
+    // Create a blob and trigger download (simplified implementation)
+    const dummyContent = `This is simulated content for the file "${fileName}".\n\nIn a real implementation, this would contain the actual file content.\n\nFile ID: ${fileId}`;
+    const blob = new Blob([dummyContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
     setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
       toast({
         title: "Download Complete",
         description: `File ${fileName} has been downloaded successfully`,
       });
-    }, 2000);
+    }, 1000);
   };
 
   const handleRebalanceData = () => {
@@ -201,30 +216,43 @@ const Index = () => {
 
         <Tabs defaultValue="dashboard" className="w-full">
           <TabsList className="mb-6">
-            <TabsTrigger value="dashboard">
-              Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="files">
-              Files
-            </TabsTrigger>
-            <TabsTrigger value="nodes">
-              Nodes
-            </TabsTrigger>
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="files">Files</TabsTrigger>
+            <TabsTrigger value="nodes">Nodes</TabsTrigger>
           </TabsList>
           
           <TabsContent value="dashboard">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <AnimateOnMount animation={slideUp} delay={100}>
-                <Card className="border-none shadow-lg bg-card">
+                <Card className="border-none shadow-lg bg-card hover:shadow-xl transition-all duration-300">
                   <CardHeader className="pb-2">
-                    <CardTitle>Files</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <FilePlus2 className="h-5 w-5 text-primary" />
+                      Files
+                    </CardTitle>
                     <CardDescription>Stored files and replicas</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-4xl font-bold mb-2 text-primary">{files.length}</div>
-                    <div className="text-sm text-muted-foreground mb-4">
-                      Total replication factor: {averageReplicationFactor.toFixed(1)}x
+                    <div className="flex items-end gap-2">
+                      <div className="text-4xl font-bold mb-2 text-primary">{files.length}</div>
+                      <div className="text-sm text-muted-foreground mb-2">total files</div>
                     </div>
+                    <div className="text-sm text-muted-foreground mb-4">
+                      Replication factor: <span className="font-medium">{averageReplicationFactor.toFixed(1)}x</span>
+                    </div>
+                    
+                    {/* File storage visualization */}
+                    <div className="mt-2 mb-1 flex justify-between items-center text-xs">
+                      <span>Storage usage</span>
+                      <span className="font-medium">{usedStorage} MB / {totalStorage} MB</span>
+                    </div>
+                    <div className="h-2 w-full bg-secondary rounded-full overflow-hidden mb-4">
+                      <div 
+                        className="h-full bg-gradient-to-r from-blue-400 to-blue-600"
+                        style={{ width: `${storagePercentage}%` }}
+                      ></div>
+                    </div>
+                    
                     <div className="mt-4 flex gap-2">
                       <UploadFileDialog 
                         nodes={nodes} 
@@ -238,17 +266,34 @@ const Index = () => {
               </AnimateOnMount>
               
               <AnimateOnMount animation={slideInLeft} delay={200}>
-                <Card className="border-none shadow-lg bg-card">
+                <Card className="border-none shadow-lg bg-card hover:shadow-xl transition-all duration-300">
                   <CardHeader className="pb-2">
-                    <CardTitle>System Status</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <HardDrive className="h-5 w-5 text-primary" />
+                      System Status
+                    </CardTitle>
                     <CardDescription>Node health and storage</CardDescription>
                   </CardHeader>
                   <CardContent>
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-primary">{nodes.length}</div>
+                        <div className="text-xs text-muted-foreground">Total Nodes</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-green-500">{activeNodes.length}</div>
+                        <div className="text-xs text-muted-foreground">Online</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-red-500">{nodes.length - activeNodes.length}</div>
+                        <div className="text-xs text-muted-foreground">Offline</div>
+                      </div>
+                    </div>
                     <div className="space-y-4">
                       {nodes.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No nodes available. Add a node to get started.</p>
                       ) : (
-                        nodes.map((node) => (
+                        nodes.slice(0, 3).map((node) => (
                           <motion.div 
                             key={node.id} 
                             className="space-y-1"
@@ -257,14 +302,14 @@ const Index = () => {
                             transition={{ duration: 0.3 }}
                           >
                             <div className="flex justify-between items-center">
-                              <span className="text-sm">{node.name}</span>
+                              <span className="text-sm font-medium">{node.name}</span>
                               <span className={`text-xs px-2 py-0.5 rounded-full ${node.status === 'online' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
                                 {node.status === 'online' ? 'Online' : 'Offline'}
                               </span>
                             </div>
                             <div className="relative w-full h-2 bg-secondary rounded-full overflow-hidden">
                               <div 
-                                className="absolute top-0 left-0 h-full bg-blue-500"
+                                className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-400 to-blue-600"
                                 style={{
                                   width: `${(node.storage_used / node.storage_total) * 100}%`,
                                   transition: 'width 0.5s ease-out'
@@ -275,15 +320,26 @@ const Index = () => {
                           </motion.div>
                         ))
                       )}
+                      {nodes.length > 3 && (
+                        <p className="text-xs text-center mt-2 text-muted-foreground">
+                          + {nodes.length - 3} more nodes. <Button variant="link" className="p-0 h-auto text-xs">See all</Button>
+                        </p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
               </AnimateOnMount>
               
               <AnimateOnMount animation={slideInRight} delay={300}>
-                <Card className="border-none shadow-lg bg-card">
+                <Card className="border-none shadow-lg bg-card hover:shadow-xl transition-all duration-300">
                   <CardHeader className="pb-2">
-                    <CardTitle>Actions</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                      </svg>
+                      Actions
+                    </CardTitle>
                     <CardDescription>System operations</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -292,7 +348,7 @@ const Index = () => {
                       onCreateFile={handleCreateFile}
                       onCreateReplica={handleCreateReplica}
                       variant="outline"
-                      className="w-full justify-start"
+                      className="w-full justify-start hover:bg-secondary transition-colors"
                       maxStorageMB={100}
                     >
                       <FilePlus2 className="mr-2 h-4 w-4" />
@@ -301,16 +357,70 @@ const Index = () => {
                     <CreateNodeDialog 
                       onCreateNode={(nodeData) => createNode({...nodeData, storage_total: Math.min(nodeData.storage_total, 100)})}
                       variant="outline"
-                      className="w-full justify-start"
+                      className="w-full justify-start hover:bg-secondary transition-colors"
                     />
                     <Button 
-                      className="w-full justify-start" 
+                      className="w-full justify-start hover:bg-secondary transition-colors" 
                       variant="outline"
                       onClick={handleRebalanceData}
                     >
                       <HardDrive className="mr-2 h-4 w-4" />
                       Rebalance Data
                     </Button>
+                  </CardContent>
+                </Card>
+              </AnimateOnMount>
+            </div>
+            
+            {/* Activity summary section */}
+            <div className="mt-6">
+              <AnimateOnMount animation={slideUp} delay={400}>
+                <Card className="border-none shadow-lg bg-card">
+                  <CardHeader>
+                    <CardTitle>System Overview</CardTitle>
+                    <CardDescription>Current system status and statistics</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="flex flex-col space-y-2">
+                        <h3 className="text-sm font-medium">Storage Usage</h3>
+                        <div className="text-3xl font-bold">{storagePercentage}%</div>
+                        <p className="text-xs text-muted-foreground">{usedStorage} MB of {totalStorage} MB used</p>
+                        <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-green-400 to-green-600"
+                            style={{ width: `${storagePercentage}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col space-y-2">
+                        <h3 className="text-sm font-medium">Data Distribution</h3>
+                        <div className="text-3xl font-bold">{averageReplicationFactor.toFixed(1)}x</div>
+                        <p className="text-xs text-muted-foreground">Average replication factor</p>
+                        <div className="grid grid-cols-5 gap-1 mt-1">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <div 
+                              key={i} 
+                              className={`h-2 rounded-full ${i < Math.round(averageReplicationFactor) ? 'bg-blue-500' : 'bg-secondary'}`}
+                            ></div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col space-y-2">
+                        <h3 className="text-sm font-medium">Node Health</h3>
+                        <div className="text-3xl font-bold">{activeNodes.length}/{nodes.length}</div>
+                        <p className="text-xs text-muted-foreground">Nodes currently online</p>
+                        <div className="flex items-center space-x-2">
+                          <span className="inline-block w-3 h-3 bg-green-500 rounded-full"></span>
+                          <span className="text-xs">{activeNodes.length} Online</span>
+                          
+                          <span className="inline-block w-3 h-3 bg-red-500 rounded-full ml-4"></span>
+                          <span className="text-xs">{nodes.length - activeNodes.length} Offline</span>
+                        </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </AnimateOnMount>
