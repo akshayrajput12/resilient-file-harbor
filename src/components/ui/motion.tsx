@@ -12,9 +12,8 @@ interface MotionProps {
   [key: string]: any;
 }
 
-// Simple implementation of motion div for animations
-export const motion = {
-  div: ({
+const createMotionComponent = (Component: string) => {
+  return ({
     children,
     initial,
     animate,
@@ -49,14 +48,20 @@ export const motion = {
       ...initial,
     });
     
-    return (
-      <div
-        className={className}
-        style={styles}
-        {...props}
-      >
-        {children}
-      </div>
+    return React.createElement(
+      Component,
+      {
+        className,
+        style: styles,
+        ...props
+      },
+      children
     );
-  }
+  };
+};
+
+// Export motion components
+export const motion = {
+  div: createMotionComponent('div'),
+  tr: createMotionComponent('tr')
 };

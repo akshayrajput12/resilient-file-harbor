@@ -202,13 +202,13 @@ const Index = () => {
         <Tabs defaultValue="dashboard" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="dashboard">
-              <span>Dashboard</span>
+              Dashboard
             </TabsTrigger>
             <TabsTrigger value="files">
-              <span>Files</span>
+              Files
             </TabsTrigger>
             <TabsTrigger value="nodes">
-              <span>Nodes</span>
+              Nodes
             </TabsTrigger>
           </TabsList>
           
@@ -263,12 +263,13 @@ const Index = () => {
                               </span>
                             </div>
                             <div className="relative w-full h-2 bg-secondary rounded-full overflow-hidden">
-                              <motion.div 
+                              <div 
                                 className="absolute top-0 left-0 h-full bg-blue-500"
-                                initial={{ width: 0 }}
-                                animate={{ width: `${(node.storage_used / node.storage_total) * 100}%` }}
-                                transition={{ duration: 0.5, delay: 0.2 }}
-                              ></motion.div>
+                                style={{
+                                  width: `${(node.storage_used / node.storage_total) * 100}%`,
+                                  transition: 'width 0.5s ease-out'
+                                }}
+                              ></div>
                             </div>
                             <div className="text-xs text-muted-foreground">{Math.round((node.storage_used / node.storage_total) * 100)}% used</div>
                           </motion.div>
