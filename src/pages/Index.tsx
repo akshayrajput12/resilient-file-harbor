@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, HardDrive, FilePlus2, Eye, Trash2, Sun, Moon } from "lucide-react";
+import { Download, HardDrive, FilePlus2, Eye, Trash2, Sun } from "lucide-react";
 import AnimateOnMount from '@/components/AnimateOnMount';
 import { slideUp, slideInLeft, slideInRight } from '@/lib/animation';
 import { useNodes } from '@/hooks/useNodes';
@@ -19,7 +19,7 @@ import { useReplicas } from '@/hooks/useReplicas';
 import { toast } from '@/hooks/use-toast';
 import { FileViewerDialog } from '@/components/FileViewerDialog';
 import { useTheme } from '@/hooks/useTheme';
-import { motion } from '@/components/ui/motion';
+import { motion } from 'framer-motion';
 
 const Index = () => {
   const { user } = useAuth();
@@ -29,6 +29,13 @@ const Index = () => {
   const { replicas, createReplica, deleteReplica } = useReplicas(selectedFile || undefined);
   const { theme, toggleTheme } = useTheme();
   const [fileToView, setFileToView] = useState<{ id: string; name: string } | null>(null);
+
+  // Force light mode
+  useEffect(() => {
+    if (theme === 'dark') {
+      toggleTheme();
+    }
+  }, [theme]);
 
   const activeNodes = nodes.filter(node => node.status === 'online');
   const totalStorage = nodes.reduce((acc, node) => acc + node.storage_total, 0);
@@ -198,9 +205,9 @@ const Index = () => {
           variant="ghost" 
           size="icon"
           onClick={toggleTheme}
-          className="ml-auto"
+          className="ml-auto hidden" // Hide the theme toggle
         >
-          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          <Sun className="h-5 w-5" />
         </Button>
       </Navbar>
       <div className="p-4 md:p-8">
@@ -247,10 +254,12 @@ const Index = () => {
                       <span className="font-medium">{usedStorage} MB / {totalStorage} MB</span>
                     </div>
                     <div className="h-2 w-full bg-secondary rounded-full overflow-hidden mb-4">
-                      <div 
+                      <motion.div 
                         className="h-full bg-gradient-to-r from-blue-400 to-blue-600"
-                        style={{ width: `${storagePercentage}%` }}
-                      ></div>
+                        initial={{ width: 0 }}
+                        animate={{ width: `${storagePercentage}%` }}
+                        transition={{ duration: 0.8, delay: 0.2 }}
+                      ></motion.div>
                     </div>
                     
                     <div className="mt-4 flex gap-2">
@@ -300,6 +309,7 @@ const Index = () => {
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.3 }}
+                            whileHover={{ scale: 1.02 }}
                           >
                             <div className="flex justify-between items-center">
                               <span className="text-sm font-medium">{node.name}</span>
@@ -308,13 +318,12 @@ const Index = () => {
                               </span>
                             </div>
                             <div className="relative w-full h-2 bg-secondary rounded-full overflow-hidden">
-                              <div 
+                              <motion.div 
                                 className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-400 to-blue-600"
-                                style={{
-                                  width: `${(node.storage_used / node.storage_total) * 100}%`,
-                                  transition: 'width 0.5s ease-out'
-                                }}
-                              ></div>
+                                initial={{ width: 0 }}
+                                animate={{ width: `${(node.storage_used / node.storage_total) * 100}%` }}
+                                transition={{ duration: 0.5, delay: 0.1 }}
+                              ></motion.div>
                             </div>
                             <div className="text-xs text-muted-foreground">{Math.round((node.storage_used / node.storage_total) * 100)}% used</div>
                           </motion.div>
@@ -343,30 +352,36 @@ const Index = () => {
                     <CardDescription>System operations</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <UploadFileDialog 
-                      nodes={nodes} 
-                      onCreateFile={handleCreateFile}
-                      onCreateReplica={handleCreateReplica}
-                      variant="outline"
-                      className="w-full justify-start hover:bg-secondary transition-colors"
-                      maxStorageMB={100}
-                    >
-                      <FilePlus2 className="mr-2 h-4 w-4" />
-                      Add New File
-                    </UploadFileDialog>
-                    <CreateNodeDialog 
-                      onCreateNode={(nodeData) => createNode({...nodeData, storage_total: Math.min(nodeData.storage_total, 100)})}
-                      variant="outline"
-                      className="w-full justify-start hover:bg-secondary transition-colors"
-                    />
-                    <Button 
-                      className="w-full justify-start hover:bg-secondary transition-colors" 
-                      variant="outline"
-                      onClick={handleRebalanceData}
-                    >
-                      <HardDrive className="mr-2 h-4 w-4" />
-                      Rebalance Data
-                    </Button>
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <UploadFileDialog 
+                        nodes={nodes} 
+                        onCreateFile={handleCreateFile}
+                        onCreateReplica={handleCreateReplica}
+                        variant="outline"
+                        className="w-full justify-start hover:bg-secondary transition-colors"
+                        maxStorageMB={100}
+                      >
+                        <FilePlus2 className="mr-2 h-4 w-4" />
+                        Add New File
+                      </UploadFileDialog>
+                    </motion.div>
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <CreateNodeDialog 
+                        onCreateNode={(nodeData) => createNode({...nodeData, storage_total: Math.min(nodeData.storage_total, 100)})}
+                        variant="outline"
+                        className="w-full justify-start hover:bg-secondary transition-colors"
+                      />
+                    </motion.div>
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button 
+                        className="w-full justify-start hover:bg-secondary transition-colors" 
+                        variant="outline"
+                        onClick={handleRebalanceData}
+                      >
+                        <HardDrive className="mr-2 h-4 w-4" />
+                        Rebalance Data
+                      </Button>
+                    </motion.div>
                   </CardContent>
                 </Card>
               </AnimateOnMount>
@@ -375,40 +390,64 @@ const Index = () => {
             {/* Activity summary section */}
             <div className="mt-6">
               <AnimateOnMount animation={slideUp} delay={400}>
-                <Card className="border-none shadow-lg bg-card">
-                  <CardHeader>
+                <Card className="border-none shadow-lg bg-card relative overflow-hidden">
+                  <div className="absolute inset-0 bg-cover bg-center opacity-5" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=1500&q=80)' }}></div>
+                  <CardHeader className="relative z-10">
                     <CardTitle>System Overview</CardTitle>
                     <CardDescription>Current system status and statistics</CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="relative z-10">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="flex flex-col space-y-2">
+                      <motion.div 
+                        className="flex flex-col space-y-2"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.1 }}
+                        whileHover={{ scale: 1.02 }}
+                      >
                         <h3 className="text-sm font-medium">Storage Usage</h3>
                         <div className="text-3xl font-bold">{storagePercentage}%</div>
                         <p className="text-xs text-muted-foreground">{usedStorage} MB of {totalStorage} MB used</p>
                         <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                          <div 
+                          <motion.div 
                             className="h-full bg-gradient-to-r from-green-400 to-green-600"
-                            style={{ width: `${storagePercentage}%` }}
-                          ></div>
+                            initial={{ width: 0 }}
+                            animate={{ width: `${storagePercentage}%` }}
+                            transition={{ duration: 0.8, delay: 0.2 }}
+                          ></motion.div>
                         </div>
-                      </div>
+                      </motion.div>
                       
-                      <div className="flex flex-col space-y-2">
+                      <motion.div 
+                        className="flex flex-col space-y-2"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                        whileHover={{ scale: 1.02 }}
+                      >
                         <h3 className="text-sm font-medium">Data Distribution</h3>
                         <div className="text-3xl font-bold">{averageReplicationFactor.toFixed(1)}x</div>
                         <p className="text-xs text-muted-foreground">Average replication factor</p>
                         <div className="grid grid-cols-5 gap-1 mt-1">
                           {Array.from({ length: 5 }).map((_, i) => (
-                            <div 
+                            <motion.div 
                               key={i} 
                               className={`h-2 rounded-full ${i < Math.round(averageReplicationFactor) ? 'bg-blue-500' : 'bg-secondary'}`}
-                            ></div>
+                              initial={{ scaleX: 0 }}
+                              animate={{ scaleX: 1 }}
+                              transition={{ duration: 0.2, delay: 0.1 * i }}
+                            ></motion.div>
                           ))}
                         </div>
-                      </div>
+                      </motion.div>
                       
-                      <div className="flex flex-col space-y-2">
+                      <motion.div 
+                        className="flex flex-col space-y-2"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.3 }}
+                        whileHover={{ scale: 1.02 }}
+                      >
                         <h3 className="text-sm font-medium">Node Health</h3>
                         <div className="text-3xl font-bold">{activeNodes.length}/{nodes.length}</div>
                         <p className="text-xs text-muted-foreground">Nodes currently online</p>
@@ -419,7 +458,7 @@ const Index = () => {
                           <span className="inline-block w-3 h-3 bg-red-500 rounded-full ml-4"></span>
                           <span className="text-xs">{nodes.length - activeNodes.length} Offline</span>
                         </div>
-                      </div>
+                      </motion.div>
                     </div>
                   </CardContent>
                 </Card>
@@ -429,12 +468,13 @@ const Index = () => {
           
           <TabsContent value="files">
             <AnimateOnMount animation={slideUp}>
-              <Card className="border-none shadow-lg bg-card">
-                <CardHeader>
+              <Card className="border-none shadow-lg bg-card relative overflow-hidden">
+                <div className="absolute inset-0 bg-cover bg-center opacity-5" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1500&q=80)' }}></div>
+                <CardHeader className="relative z-10">
                   <CardTitle>Stored Files</CardTitle>
                   <CardDescription>Files distributed across nodes</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="relative z-10">
                   <FileTable 
                     files={files} 
                     nodes={nodes} 

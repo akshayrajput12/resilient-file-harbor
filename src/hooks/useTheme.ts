@@ -5,15 +5,9 @@ type Theme = 'light' | 'dark';
 
 export function useTheme() {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Check for saved theme preference
+    // Always default to light mode
     const savedTheme = localStorage.getItem('theme') as Theme | null;
-    
-    // Default to light mode instead of system preference
-    if (!savedTheme) {
-      return 'light';
-    }
-    
-    return savedTheme;
+    return savedTheme || 'light';
   });
 
   // Apply theme class to document
