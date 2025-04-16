@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { FileX, Download, Eye } from "lucide-react";
 import { type File, type Node } from "@/types/supabase";
 import { toast } from "@/hooks/use-toast";
+import { motion } from "@/components/ui/motion";
 
 interface FileTableProps {
   files: File[];
@@ -71,26 +72,37 @@ export function FileTable({
   
   return (
     <div className="overflow-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b">
-            <th className="text-left py-3">Name</th>
-            <th className="text-left py-3">Size</th>
-            <th className="text-left py-3">Replicas</th>
-            <th className="text-left py-3">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {files.length === 0 ? (
-            <tr>
-              <td colSpan={4} className="py-4 text-center text-gray-500">
-                No files uploaded yet
-              </td>
+      {files.length === 0 ? (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="text-center py-12"
+        >
+          <p className="text-muted-foreground mb-4">No files uploaded yet</p>
+          <FileX className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+          <p className="text-sm text-muted-foreground">Upload a file to get started</p>
+        </motion.div>
+      ) : (
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="text-left py-3">Name</th>
+              <th className="text-left py-3">Size</th>
+              <th className="text-left py-3">Replicas</th>
+              <th className="text-left py-3">Actions</th>
             </tr>
-          ) : (
-            files.map((file) => (
-              <tr key={file.id} className="border-b">
-                <td className="py-3">{file.name}</td>
+          </thead>
+          <tbody>
+            {files.map((file, index) => (
+              <motion.tr 
+                key={file.id} 
+                className="border-b border-border"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+              >
+                <td className="py-3 max-w-[200px] truncate">{file.name}</td>
                 <td className="py-3">{file.size} MB</td>
                 <td className="py-3">
                   <div className="flex flex-wrap gap-1">
@@ -100,7 +112,7 @@ export function FileTable({
                         <span 
                           key={replica.id} 
                           className={`px-2 py-1 text-xs rounded-full ${
-                            node?.status === 'online' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            node?.status === 'online' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
                           }`}
                         >
                           {node?.name || `Node ${replica.node_id.substring(0, 4)}`}
@@ -108,7 +120,7 @@ export function FileTable({
                       );
                     })}
                     {(!file.replicas || file.replicas.length === 0) && (
-                      <span className="text-xs text-gray-500">No replicas</span>
+                      <span className="text-xs text-muted-foreground">No replicas</span>
                     )}
                   </div>
                 </td>
@@ -124,16 +136,21 @@ export function FileTable({
                         <Download className="h-4 w-4" />
                       </Button>
                     )}
-                    <Button variant="ghost" size="sm" onClick={() => onDeleteFile(file.id)}>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => onDeleteFile(file.id)}
+                      className="text-destructive hover:text-destructive/80"
+                    >
                       <FileX className="h-4 w-4" />
                     </Button>
                   </div>
                 </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+              </motion.tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

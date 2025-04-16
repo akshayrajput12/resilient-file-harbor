@@ -16,6 +16,7 @@ interface UploadFileDialogProps {
   children?: React.ReactNode;
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | null | undefined;
   className?: string;
+  maxStorageMB?: number;
 }
 
 export function UploadFileDialog({ 
@@ -24,7 +25,8 @@ export function UploadFileDialog({
   onCreateReplica,
   children,
   variant = "default",
-  className
+  className,
+  maxStorageMB = 100
 }: UploadFileDialogProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -37,7 +39,19 @@ export function UploadFileDialog({
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
+      const file = e.target.files[0];
+      const fileSizeMB = Math.ceil(file.size / (1024 * 1024));
+      
+      if (fileSizeMB > maxStorageMB) {
+        toast({
+          title: "File too large",
+          description: `File size exceeds the maximum allowed size of ${maxStorageMB}MB`,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setSelectedFile(file);
     }
   };
   
@@ -96,9 +110,9 @@ export function UploadFileDialog({
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Upload File</DialogTitle>
+          <DialogTitle>Upload File (Max {maxStorageMB}MB)</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -136,7 +150,7 @@ export function UploadFileDialog({
             <Label>Select Nodes for Storage</Label>
             <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-2">
               {onlineNodes.length === 0 ? (
-                <p className="text-sm text-gray-500 col-span-2">No online nodes available</p>
+                <p className="text-sm text-muted-foreground col-span-2">No online nodes available</p>
               ) : (
                 onlineNodes.map((node) => {
                   const fileSizeMB = selectedFile ? Math.ceil(selectedFile.size / (1024 * 1024)) : 0;
@@ -161,10 +175,10 @@ export function UploadFileDialog({
                       />
                       <label 
                         htmlFor={`node-${node.id}`} 
-                        className={`text-sm ${!hasEnoughSpace && fileSizeMB > 0 ? 'text-gray-400' : ''}`}
+                        className={`text-sm ${!hasEnoughSpace && fileSizeMB > 0 ? 'text-muted-foreground/50' : ''}`}
                       >
-                        {node.name} ({node.storage_used}/{node.storage_total} GB)
-                        {!hasEnoughSpace && fileSizeMB > 0 && <span className="ml-1 text-red-500">(Not enough space)</span>}
+                        {node.name} ({node.storage_used}/{node.storage_total} MB)
+                        {!hasEnoughSpace && fileSizeMB > 0 && <span className="ml-1 text-destructive">(Not enough space)</span>}
                       </label>
                     </div>
                   );
@@ -172,7 +186,7 @@ export function UploadFileDialog({
               )}
             </div>
             {selectedNodes.length > 0 && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Replication Factor: {selectedNodes.length}x
               </p>
             )}
