@@ -65,7 +65,7 @@ export const getFiles = async () => {
     replicas: replicas.filter((replica) => replica.file_id === file.id)
   }));
   
-  return filesWithReplicas as SupabaseFile[];
+  return filesWithReplicas as File[];
 };
 
 export const createFile = async (file: FileInsert) => {
@@ -81,14 +81,14 @@ export const createFile = async (file: FileInsert) => {
     .single();
   
   if (error) throw error;
-  return data as SupabaseFile;
+  return data as File;
 };
 
 export const deleteFile = async (id: string) => {
   // First, get the file to get its storage path
   const { data: file, error: fileError } = await supabase
     .from('files')
-    .select('storage_path')
+    .select('*')
     .eq('id', id)
     .single();
   
