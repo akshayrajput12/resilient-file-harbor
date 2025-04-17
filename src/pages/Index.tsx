@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -134,29 +133,53 @@ const Index = () => {
     
     toast({
       title: "Rebalancing Data",
-      description: "Redistributing data across available nodes...",
+      description: "Starting data redistribution process across nodes...",
     });
     
     setTimeout(() => {
       toast({
-        title: "Rebalancing in Progress",
-        description: "50% complete - moving files to optimize distribution",
+        title: "Analyzing Storage Distribution",
+        description: "Scanning node storage patterns and file placements...",
       });
     }, 1000);
     
     setTimeout(() => {
       toast({
+        title: "Optimizing File Placement",
+        description: `Relocating replicas to balance load across ${onlineNodes.length} nodes`,
+      });
+    }, 2500);
+    
+    setTimeout(() => {
+      toast({
+        title: "Rebalancing in Progress",
+        description: "50% complete - redistributing file replicas for optimal storage utilization",
+      });
+    }, 4000);
+    
+    setTimeout(() => {
+      toast({
+        title: "Verifying Data Integrity",
+        description: "Ensuring all files remain accessible during rebalancing",
+      });
+    }, 5500);
+    
+    setTimeout(() => {
+      toast({
         title: "Rebalance Complete",
-        description: "Data has been optimally distributed across nodes",
+        description: `Successfully redistributed ${filesWithReplicas.length} files across ${onlineNodes.length} nodes for optimal performance`,
+        variant: "success"
       });
       
-      setTimeout(() => {
-        toast({
-          title: "Rebalance Results",
-          description: `Balanced ${filesWithReplicas.length} files across ${onlineNodes.length} nodes`,
+      onlineNodes.forEach(node => {
+        const totalStorage = node.storage_total;
+        const idealUsage = (totalStorage * 0.6) + (Math.random() * totalStorage * 0.2);
+        updateNode({ 
+          id: node.id, 
+          storage_used: Math.min(Math.round(idealUsage), totalStorage)
         });
-      }, 500);
-    }, 3000);
+      });
+    }, 7000);
   };
 
   if (isLoadingNodes || isLoadingFiles) {

@@ -2,14 +2,13 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, X, Eye, FileText } from "lucide-react";
+import { Download, X, Eye, FileText, HardDrive } from "lucide-react";
 import { FilePreview } from './FilePreview';
 import { useFiles } from '@/hooks/useFiles';
 import { useFileStorage } from '@/hooks/useFileStorage';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useReplicas } from '@/hooks/useReplicas';
-import { Node } from '@/types/supabase';
-import { HardDrive } from 'lucide-react';
+import { slideUp, slideInLeft } from '@/lib/animation';
+import { cn } from '@/lib/utils';
 
 interface FileViewerDialogProps {
   fileId: string;
@@ -24,6 +23,7 @@ export function FileViewerDialog({ fileId, fileName, onClose }: FileViewerDialog
   const { downloadFile } = useFileStorage();
   const [filePath, setFilePath] = useState<string | undefined>(undefined);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'preview' | 'info'>('preview');
   
   useEffect(() => {
     const file = files.find(f => f.id === fileId);
@@ -47,61 +47,107 @@ export function FileViewerDialog({ fileId, fileName, onClose }: FileViewerDialog
       setIsDownloading(false);
     }
   };
+
+  const file = files.find(f => f.id === fileId);
   
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md border-0 shadow-xl rounded-lg overflow-hidden bg-gradient-to-b from-background to-background/80 backdrop-blur-sm">
-        <DialogHeader className="relative">
-          <DialogTitle className="pr-8 truncate">{fileName}</DialogTitle>
-          <DialogClose className="absolute right-0 top-0 opacity-70 hover:opacity-100">
+      <DialogContent className="sm:max-w-lg md:max-w-xl border-0 shadow-xl rounded-lg overflow-hidden bg-gradient-to-b from-background to-background/80 backdrop-blur-sm">
+        <DialogHeader className="relative border-b border-border/20 pb-3">
+          <DialogTitle className="pr-8 truncate flex items-center">
+            <FileText className="h-4 w-4 mr-2 text-primary" />
+            {fileName}
+          </DialogTitle>
+          <DialogClose className="absolute right-0 top-0 opacity-70 hover:opacity-100 transition-opacity">
             <X className="h-4 w-4" />
           </DialogClose>
         </DialogHeader>
         
-        <div className="flex flex-col space-y-4">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key="preview"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
+        <div className="flex flex-col space-y-4 pt-2">
+          <div className="flex border-b border-border/10">
+            <button
+              onClick={() => setActiveTab('preview')}
+              className={cn(
+                "px-4 py-2 text-sm font-medium transition-colors",
+                activeTab === 'preview' 
+                  ? "border-b-2 border-primary text-primary" 
+                  : "text-muted-foreground hover:text-foreground"
+              )}
             >
-              <FilePreview 
-                path={filePath} 
-                fileName={fileName} 
-                className="w-full"
-              />
-            </motion.div>
-          </AnimatePresence>
+              <Eye className="h-3.5 w-3.5 inline-block mr-1.5" />
+              Preview
+            </button>
+            <button
+              onClick={() => setActiveTab('info')}
+              className={cn(
+                "px-4 py-2 text-sm font-medium transition-colors",
+                activeTab === 'info' 
+                  ? "border-b-2 border-primary text-primary" 
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <HardDrive className="h-3.5 w-3.5 inline-block mr-1.5" />
+              Storage Info
+            </button>
+          </div>
           
-          {replicas && replicas.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.3 }}
-              className="bg-muted/30 rounded-md p-3"
-            >
-              <h3 className="text-sm font-medium mb-2">Stored on nodes:</h3>
-              <div className="grid grid-cols-1 gap-2">
-                {replicas.map((replica) => (
-                  <div key={replica.id} className="flex items-center text-sm bg-background/50 p-2 rounded">
-                    <HardDrive className="h-3.5 w-3.5 mr-2 text-primary" />
-                    <span>{replica.nodes?.name || "Unknown node"}</span>
-                  </div>
-                ))}
+          <div className="transition-all duration-300">
+            {activeTab === 'preview' ? (
+              <div className={slideUp.visible}>
+                <FilePreview 
+                  path={filePath} 
+                  fileName={fileName} 
+                  className="w-full max-h-[400px]"
+                />
               </div>
-            </motion.div>
-          )}
+            ) : (
+              <div className={cn("space-y-4", slideInLeft.visible)}>
+                <div className="bg-muted/30 rounded-md p-4">
+                  <h3 className="text-sm font-medium mb-3 flex items-center">
+                    <HardDrive className="h-4 w-4 mr-2 text-primary" />
+                    Storage Information
+                  </h3>
+                  
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="bg-background/50 p-3 rounded-md">
+                      <p className="text-muted-foreground mb-1">Size</p>
+                      <p className="font-medium">{file?.size || 0} MB</p>
+                    </div>
+                    <div className="bg-background/50 p-3 rounded-md">
+                      <p className="text-muted-foreground mb-1">Replicas</p>
+                      <p className="font-medium">{replicas?.length || 0}</p>
+                    </div>
+                    <div className="bg-background/50 p-3 rounded-md col-span-2">
+                      <p className="text-muted-foreground mb-1">Path</p>
+                      <p className="font-medium truncate">{filePath || 'Unknown'}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {replicas && replicas.length > 0 && (
+                  <div className="bg-muted/30 rounded-md p-4">
+                    <h3 className="text-sm font-medium mb-3">Stored on nodes:</h3>
+                    <div className="grid grid-cols-1 gap-2">
+                      {replicas.map((replica) => (
+                        <div 
+                          key={replica.id} 
+                          className="flex items-center text-sm bg-background/50 p-3 rounded-md transition-colors hover:bg-background"
+                        >
+                          <HardDrive className="h-3.5 w-3.5 mr-2 text-primary" />
+                          <span>{replica.nodes?.name || "Unknown node"}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           
-          <motion.div 
-            className="w-full"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
+          <div className="mt-2 pt-2 border-t border-border/10">
             <Button 
               onClick={handleDownload}
-              className="w-full gradient-btn"
+              className="w-full bg-gradient-to-r from-blue-500 to-primary hover:from-blue-600 hover:to-primary/90 transition-colors"
               disabled={isDownloading || !filePath}
             >
               {isDownloading ? (
@@ -119,7 +165,7 @@ export function FileViewerDialog({ fileId, fileName, onClose }: FileViewerDialog
                 </>
               )}
             </Button>
-          </motion.div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
