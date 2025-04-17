@@ -179,14 +179,16 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar>
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={toggleTheme}
-          className="ml-auto hidden"
-        >
-          <Sun className="h-5 w-5" />
-        </Button>
+        <div className="ml-auto">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={toggleTheme}
+            className="hidden"
+          >
+            <Sun className="h-5 w-5" />
+          </Button>
+        </div>
       </Navbar>
       <div className="p-4 md:p-8">
         <motion.div

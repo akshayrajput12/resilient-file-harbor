@@ -6,6 +6,7 @@ import { useReplicas } from "./useReplicas";
 import { FileInsert, File as SupabaseFile } from "@/types/supabase";
 import { toast } from "./use-toast";
 import { useFileStorage } from "./useFileStorage";
+import { supabase } from "@/integrations/supabase/client";
 
 export function useFileUpload() {
   const [isUploading, setIsUploading] = useState(false);
