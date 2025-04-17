@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -190,6 +191,7 @@ const Index = () => {
           </Button>
         </div>
       </Navbar>
+      
       <div className="p-4 md:p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
