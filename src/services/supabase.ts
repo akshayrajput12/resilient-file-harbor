@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { type Node, type File, type Replica, type NodeInsert, type FileInsert, type ReplicaInsert, type NodeUpdate } from '@/types/supabase';
 
@@ -70,13 +69,11 @@ export const getFiles = async () => {
 };
 
 export const createFile = async (file: FileInsert) => {
-  // Make sure we have the storage_path
+  // Ensure storage_path is provided
   if (!file.storage_path) {
     throw new Error('Storage path is required');
   }
   
-  // First, we need to update the files table in Supabase to include the storage_path
-  // We'll do this by adding the storage_path to the file record
   const { data, error } = await supabase
     .from('files')
     .insert({
@@ -103,7 +100,7 @@ export const deleteFile = async (id: string) => {
   if (fileError) throw fileError;
   
   // Delete the file from storage if we have a path
-  if ((file as any).storage_path) {
+  if (file && (file as any).storage_path) {
     const { error: storageError } = await supabase
       .storage
       .from('file_uploads')
